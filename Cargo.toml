@@ -1,20 +1,17 @@
 [package]
 name = "Passfilt"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
-[dependencies.zeroize]
-version = "1.8.1"
+[dependencies]
+zeroize = "1.8.1"
+zxcvbn = "3.1.0"
+rand = "0.9.1"
+fake = "4.3.0"
 
 [dependencies.windows-sys]
-version = "0.59.0"
+version = "0.60.2"
 features = ["Win32_Foundation"]
-
-[dependencies.zxcvbn]
-version = "3.1.0"
-
-[dependencies.rand]
-version = "0.9.0"
