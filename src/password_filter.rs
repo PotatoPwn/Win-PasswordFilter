@@ -3,8 +3,23 @@ use windows_sys::Win32::Foundation::UNICODE_STRING;
 use zeroize::Zeroize;
 use zxcvbn::zxcvbn;
 
+use zxcvbn::Score;
 #[allow(unused_imports)]
 use zxcvbn::Score::{Four, Three};
+
+#[cfg(all(feature = "strength3", feature = "strength4"))]
+compile_error!("Only one \"strength\" feature can be enabled at once");
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "strength4")] {
+        const PASSWORD_STRENGTH: Score = Four;
+    } else if #[cfg(feature = "strength3")] {
+        const PASSWORD_STRENGTH: Score = Three;
+    } else {
+        // Explicitly default to three.
+        const PASSWORD_STRENGTH: Score = Three;
+    }
+}
 
 fn convert_unicode_to_string(unicode_string: &UNICODE_STRING) -> String {
     let buffer = unsafe {
@@ -79,7 +94,7 @@ pub extern "C" fn PasswordFilter(
     eprintln!("Score == {}", strength_estimate.score());
     eprintln!("{:?}", strength_estimate.sequence());
 
-    if strength_estimate.score() < Four {
+    if strength_estimate.score() < PASSWORD_STRENGTH {
         eprintln!("Score > {}", strength_estimate.score());
         return false;
     }
