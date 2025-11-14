@@ -1,5 +1,5 @@
 [package]
-name = "Passfilt"
+name = "lsass_pass_filter"
 version = "0.1.0"
 edition = "2024"
 
@@ -11,7 +11,17 @@ zeroize = "1.8.1"
 zxcvbn = "3.1.0"
 rand = "0.9.1"
 fake = "4.3.0"
+cfg-if = "1.0"
+
+[build-dependencies]
+cfg-if = "1.0"
 
 [dependencies.windows-sys]
 version = "0.60.2"
 features = ["Win32_Foundation"]
+
+[features]
+strength1 = []
+strength2 = []
+strength3 = []
+strength4 = []

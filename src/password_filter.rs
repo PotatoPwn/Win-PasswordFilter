@@ -1,17 +1,36 @@
 use std::slice;
 use windows_sys::Win32::Foundation::UNICODE_STRING;
 use zeroize::Zeroize;
-use zxcvbn::{zxcvbn, Score::Three};
-use zxcvbn::Score::Four;
+use zxcvbn::zxcvbn;
+
+use zxcvbn::Score;
+#[allow(unused_imports)]
+use zxcvbn::Score::{Four, One, Three, Two};
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "strength4")] {
+        const PASSWORD_STRENGTH: Score = Four;
+    } else if #[cfg(feature = "strength3")] {
+        const PASSWORD_STRENGTH: Score = Three;
+    } else if #[cfg(feature = "strength2")] {
+        const PASSWORD_STRENGTH: Score = Two;
+    } else if #[cfg(feature = "strength1")] {
+        const PASSWORD_STRENGTH: Score = One;
+    } else {
+        // Explicitly default to three.
+        const PASSWORD_STRENGTH: Score = Three;
+    }
+}
 
 fn convert_unicode_to_string(unicode_string: &UNICODE_STRING) -> String {
-    let buffer =
-        unsafe { slice::from_raw_parts(unicode_string.Buffer, unicode_string.Length as usize) };
+    let buffer = unsafe {
+        slice::from_raw_parts(unicode_string.Buffer, (unicode_string.Length as usize) / 2)
+    };
 
     let result = String::from_utf16(&buffer);
 
     match result {
-        Ok(_) => result.unwrap(),
+        Ok(value) => value,
         Err(_) => String::from(""),
     }
 }
@@ -35,11 +54,16 @@ pub extern "C" fn PasswordFilter(
     }
 
     // Convert Unicode Values into String for Easier Handling
-    let mut account_name_string = convert_unicode_to_string(&account_full_name);
+    let mut account_name_string = convert_unicode_to_string(&account_name);
+    let mut account_full_name_string = convert_unicode_to_string(&account_full_name);
     let mut password_string = convert_unicode_to_string(&password);
 
     // Ensure Converted Strings Arent Empty
     if account_name_string.is_empty() || password_string.is_empty() {
+        eprintln!(
+            "Strings ({}) and ({}) are empty",
+            account_name_string, password_string
+        );
         return false;
     }
 
@@ -55,13 +79,23 @@ pub extern "C" fn PasswordFilter(
     }
 
     // Run ZXCVBN Check
-    let strength_estimate = zxcvbn(password_string.as_str(), &[account_name_string.as_str()]);
+    let strength_estimate = zxcvbn(
+        password_string.as_str(),
+        &[
+            account_full_name_string.as_str(),
+            account_name_string.as_str(),
+        ],
+    );
 
     // Zero out String, Not Needed anymore
     account_name_string.zeroize();
+    account_full_name_string.zeroize();
     password_string.zeroize();
 
-    if strength_estimate.score() < Four {
+    eprintln!("Score == {}", strength_estimate.score());
+    eprintln!("{:?}", strength_estimate.sequence());
+
+    if strength_estimate.score() < PASSWORD_STRENGTH {
         eprintln!("Score > {}", strength_estimate.score());
         return false;
     }
