@@ -5,9 +5,14 @@ use zxcvbn::zxcvbn;
 
 use zxcvbn::Score;
 #[allow(unused_imports)]
-use zxcvbn::Score::{Four, Three};
+use zxcvbn::Score::{Four, One, Three, Two};
 
-#[cfg(all(feature = "strength3", feature = "strength4"))]
+#[cfg(all(
+    feature = "strength1",
+    feature = "strength2",
+    feature = "strength3",
+    feature = "strength4"
+))]
 compile_error!("Only one \"strength\" feature can be enabled at once");
 
 cfg_if::cfg_if! {
@@ -15,6 +20,10 @@ cfg_if::cfg_if! {
         const PASSWORD_STRENGTH: Score = Four;
     } else if #[cfg(feature = "strength3")] {
         const PASSWORD_STRENGTH: Score = Three;
+    } else if #[cfg(feature = "strength2")] {
+        const PASSWORD_STRENGTH: Score = Two;
+    } else if #[cfg(feature = "strength1")] {
+        const PASSWORD_STRENGTH: Score = One;
     } else {
         // Explicitly default to three.
         const PASSWORD_STRENGTH: Score = Three;
